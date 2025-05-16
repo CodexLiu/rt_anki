@@ -1,0 +1,8 @@
+be able to ask followup questions
+reads question to you (cloze and basic only) for cloze it either reads whats in the thing or it says "blank" 
+you answer the question whenever and can cut it off and it either plays a satisfying sound for correct or a painful sound for incorrect
+make proof of concept web app for now
+(make free and calculate api costs)
+upload your anki cards in their normal format at the end of your session itll update your cards (or we can just make it not update)
+only selects good and hard
+
