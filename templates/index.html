@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RT Anki</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>RT Anki</h1>
+        
+        <div id="category-selection">
+            <h2>Select Categories:</h2>
+            <div id="categories-list">
+                <!-- Categories will be loaded here by JavaScript -->
+                <p>Loading categories...</p>
+            </div>
+        </div>
+        
+        <button id="start-button" class="big-red-button">Start Study Session</button>
+        
+        <div id="problem-area" style="display: none;">
+            <h2 id="question-text"></h2>
+            <audio id="question-audio" controls style="display: none;"></audio>
+            <input type="text" id="user-answer-text" placeholder="Type your answer here (for now)">
+            <button id="submit-answer-button">Submit Answer</button>
+        </div>
+
+        <div id="feedback-area" style="display: none;">
+            <p id="feedback-text"></p>
+            <p id="correct-answer-text"></p>
+            <p id="explanation-text"></p>
+            <button id="follow-up-button" style="display: none;">Ask Follow-up</button>
+            <div id="follow-up-input-area" style="display: none;">
+                <input type="text" id="follow-up-question-text" placeholder="Your follow-up question">
+                <button id="submit-follow-up-button">Send Follow-up</button>
+            </div>
+        </div>
+        
+        <button id="next-question-button" style="display: none;">Next Question</button>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html> 

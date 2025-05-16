@@ -1,0 +1,80 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding-top: 20px;
+}
+
+.container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    width: 80%;
+    max-width: 600px;
+    text-align: center;
+}
+
+#categories-list label {
+    display: block;
+    margin-bottom: 5px;
+    text-align: left;
+}
+
+.big-red-button {
+    background-color: #dc3545; /* Red */
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 20px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.big-red-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+#problem-area, #feedback-area {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+input[type="text"] {
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: calc(100% - 22px); /* Account for padding and border */
+}
+
+button {
+    background-color: #007bff; /* Blue */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    margin: 5px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+} 

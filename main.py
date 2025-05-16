@@ -8,6 +8,7 @@ from utils import (
     evaluate_answer, handle_followup_question,
     answer_feedback_tool, play_sound
 )
+from utils.speech_to_text import get_speech_input
 
 def main():
     """
@@ -33,16 +34,31 @@ def main():
         
         # Get user selection
         try:
-            selection = input("\nSelect a category (number) or 'q' to quit: ")
-            if selection.lower() == 'q':
+            selection_prompt = "\nSpeak the category number or say 'quit' to exit: "
+            selection_text = get_speech_input(selection_prompt)
+            
+            if not selection_text:
+                print("No input received. Please try again.")
+                continue
+
+            if selection_text.lower() == 'q' or selection_text.lower() == 'quit':
                 break
             
-            category_index = int(selection) - 1
+            # Attempt to convert spoken numbers (e.g., "one", "two") or digits
+            # This is a simple conversion; more robust parsing might be needed for complex cases
+            num_map = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", 
+                       "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "10"}
+            processed_selection = num_map.get(selection_text.lower(), selection_text)
+
+            category_index = int(processed_selection) - 1
             if category_index < 0 or category_index >= len(categories):
-                print(f"Invalid selection. Please enter a number between 1 and {len(categories)}.")
+                print(f"Invalid selection. Please speak a number between 1 and {len(categories)}.")
                 continue
         except ValueError:
-            print("Please enter a valid number.")
+            print("Please speak a valid number for the category selection.")
+            continue
+        except Exception as e:
+            print(f"Error during category selection: {e}. Please try again.")
             continue
         
         # Get the selected category
@@ -73,7 +89,11 @@ def main():
         play_sound(question_audio_path)
         
         # Get user's answer
-        user_answer = input("\nYour answer: ")
+        user_answer_prompt = "\nYour answer (speak clearly): "
+        user_answer = get_speech_input(user_answer_prompt)
+        if not user_answer:
+            print("No answer received. Marking as incorrect.")
+            user_answer = ""
         
         # Evaluate the answer
         feedback = evaluate_answer(question, user_answer, answer, evaluation_prompt, answer_feedback_tool)
@@ -88,9 +108,14 @@ def main():
                 print(f"Explanation: {feedback['explanation']}")
             
             # Ask if user wants to ask a follow-up
-            followup_choice = input("\nWould you like to ask a follow-up question? (y/n): ")
-            if followup_choice.lower() == 'y':
-                followup = input("Your follow-up question: ")
+            followup_choice_prompt = "\nWould you like to ask a follow-up question? (Speak 'yes' or 'no'): "
+            followup_choice_text = get_speech_input(followup_choice_prompt).lower()
+            
+            if not followup_choice_text:
+                print("No choice received for follow-up.")
+            elif followup_choice_text.startswith('y'):
+                followup_prompt_text = "Your follow-up question (speak clearly): "
+                followup = get_speech_input(followup_prompt_text)
                 
                 if followup:
                     # Get follow-up response
@@ -104,6 +129,8 @@ def main():
                     
                     # Explicitly play the follow-up response audio
                     play_sound(followup_audio_path)
+                else:
+                    print("No follow-up question received.")
         
         # Wait for user to continue
         input("\nPress Enter to continue to the next question...")

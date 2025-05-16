@@ -56,10 +56,7 @@ def process_answer(is_correct, explanation=None):
         result["explanation"] = explanation
         # Convert explanation to speech as well
         speech_file = text_to_speech(explanation)
-        result["explanation_audio"] = str(speech_file)
-        
-        # Play the explanation audio
-        play_sound(speech_file)
+        result["explanation_audio_path"] = str(speech_file)
     
     return result
 
