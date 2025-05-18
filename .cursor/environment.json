@@ -1,0 +1,6 @@
+{
+  "snapshot": "snapshot-20250518-2e84aac1-5563-4f4f-94fb-b5df1e119889",
+  "install": "python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
+  "start": "source venv/bin/activate && python3 app.py",
+  "terminals": []
+}
