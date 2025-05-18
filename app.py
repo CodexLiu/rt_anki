@@ -1,6 +1,17 @@
 from flask import Flask, jsonify, render_template, request
+from flask_cors import CORS
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+from openai import OpenAI
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Initialize OpenAI client
+# Ensure your OPENAI_API_KEY is set in your .env file
+client = OpenAI()
 
 # Assuming your utility functions are in the 'utils' directory
 # and prompts are in the 'prompts' directory, relative to this script.
@@ -14,6 +25,7 @@ from utils import (
 from prompts.prompts import system_prompt, question_prompt_template, evaluation_prompt, followup_prompt
 
 app = Flask(__name__)
+CORS(app)
 
 # Ensure the anki package path is correct
 # This might need to be configurable or determined differently in a server environment
@@ -92,6 +104,43 @@ def api_start_problem():
         # import traceback
         # traceback.print_exc()
         return jsonify({"error": "Failed to start problem"}), 500
+
+@app.route('/api/transcribe_audio', methods=['POST'])
+def api_transcribe_audio():
+    """API endpoint to transcribe uploaded audio file."""
+    if 'audio_data' not in request.files:
+        return jsonify({"error": "No audio file part"}), 400
+    
+    audio_file_storage = request.files['audio_data']
+    
+    if audio_file_storage.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    if audio_file_storage:
+        try:
+            # Pass the file-like object (stream) from FileStorage to the API
+            # along with the filename, which OpenAI SDK can use for type detection.
+            # The SDK expects a tuple: (filename, file_object, content_type)
+            # For direct stream, just filename and stream should work, or let SDK infer.
+            # Reading the file into bytes is also a robust option.
+            audio_bytes = audio_file_storage.read()
+            
+            # The OpenAI client expects the file to be passed as a tuple (filename, file_data)
+            # where file_data is bytes.
+            # We need to give it a name, even if it's generic.
+            transcription = client.audio.transcriptions.create(
+                model="whisper-1", 
+                file=(audio_file_storage.filename or "audio.webm", audio_bytes),
+                response_format="text"
+            )
+            return jsonify({"transcript": transcription})
+        except Exception as e:
+            print(f"Error during transcription: {e}")
+            # import traceback
+            # traceback.print_exc()
+            return jsonify({"error": "Failed to transcribe audio"}), 500
+    
+    return jsonify({"error": "File processing error"}), 500
 
 @app.route('/api/evaluate_answer', methods=['POST'])
 def api_evaluate_answer():

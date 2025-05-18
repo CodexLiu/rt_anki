@@ -1,4 +1,5 @@
 openai>=1.0.0,<2.0.0
 python-dotenv>=1.0.0,<2.0.0
 Pyaudio>=0.2.11,<0.3.0
-websockets>=10.0,<13.0 
+websockets>=10.0,<13.0
+Flask-CORS>=3.0.10,<4.0.0 
