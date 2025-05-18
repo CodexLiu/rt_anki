@@ -27,3 +27,10 @@ def get_response(prompt):
 if __name__ == "__main__":
     sample_response = get_response("Tell me a three sentence bedtime story about a unicorn.")
     print(sample_response)
+    
+    # Test for environment variable access
+    api_key = os.getenv("OPENAI_API_KEY")
+    if api_key:
+        print("OPENAI_API_KEY is accessible.")
+    else:
+        print("OPENAI_API_KEY is NOT accessible.")
