@@ -7,7 +7,29 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 flex justify-center items-start min-h-screen pt-5">
-    <div class="container bg-white p-5 rounded-lg shadow-lg w-full max-w-lg text-center">
+    <div id="info-popup-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 items-center justify-center" style="display: none;">
+        <div id="info-popup-modal" class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h3 class="text-xl font-semibold mb-4 text-gray-700">Audio Transcription Tip</h3>
+            <p class="text-gray-600 mb-3">
+                For the best audio transcription results, try to give your answer as a complete, standalone statement.
+            </p>
+            <p class="text-gray-600 mb-1">
+                For example, if the question is: <span class="italic">"The powerhouse of the cell is the [blank]."</span>
+            </p>
+            <p class="text-gray-600 mb-4">
+                A good response would be: <span class="italic">"The powerhouse of the cell is the mitochondria."</span>
+            </p>
+            <button id="info-popup-close-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-150 ease-in-out">Got it!</button>
+        </div>
+    </div>
+
+    <div class="container bg-white p-5 rounded-lg shadow-lg w-full max-w-lg text-center relative">
+        <button id="home-button" style="display: none;" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800 transition-colors p-2 rounded-md">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7">
+                <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.68-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 101.06 1.06l8.69-8.69z" />
+                <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z" />
+            </svg>
+        </button>
         <h1 class="text-3xl font-bold mb-6 text-gray-700">RT Anki</h1>
         
         <div id="category-selection" class="mb-6">
@@ -22,7 +44,8 @@
         
         <div id="problem-area" style="display: none;" class="mt-5 p-4 border border-gray-200 rounded-lg">
             <h2 id="question-text" class="text-xl text-gray-700 mb-3"></h2>
-            <audio id="question-audio" controls class="w-full mb-3" style="display: none;"></audio>
+            <audio id="question-audio" class="w-full mb-3" style="display: none;"></audio>
+            <button id="replay-question-audio-button" style="display: none;" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-150 ease-in-out mr-2 disabled:bg-gray-400">Replay Question</button>
             <button id="record-answer-button" data-target-input="user-answer-text" class="relative overflow-hidden bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-150 ease-in-out">
                 <span class="button-text">Hold to Record Answer</span>
                 <div class="record-progress-slider absolute top-0 left-0 h-full w-0 bg-black bg-opacity-20 transition-all duration-100 ease-linear"></div>
@@ -33,7 +56,8 @@
             <p id="feedback-text" class="text-lg mb-2"></p>
             <p id="correct-answer-text" class="text-md text-gray-700 mb-1"></p>
             <p id="explanation-text" class="text-md text-gray-600 mb-3"></p>
-            <button id="follow-up-button" style="display: none;" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-150 ease-in-out mb-2">Ask Follow-up</button>
+            <button id="replay-contextual-audio-button" style="display: none;" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-150 ease-in-out mr-2 mb-2 disabled:bg-gray-400">Replay Explanation</button>
+            <button id="follow-up-button" style="display: none;" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-150 ease-in-out mb-2 disabled:bg-gray-400">Ask Follow-up</button>
             <div id="follow-up-input-area" style="display: none;" class="flex flex-col sm:flex-row items-center gap-2">
                 <input type="text" id="follow-up-question-text" placeholder="Type or speak your follow-up" class="flex-grow p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 <button id="record-follow-up-button" data-target-input="follow-up-question-text" class="relative overflow-hidden bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-150 ease-in-out w-full sm:w-auto">

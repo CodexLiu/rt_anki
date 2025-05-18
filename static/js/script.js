@@ -14,8 +14,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitFollowUpButton = document.getElementById('submit-follow-up-button');
     const nextQuestionButton = document.getElementById('next-question-button');
 
+    const replayQuestionAudioButton = document.getElementById('replay-question-audio-button');
+    const replayContextualAudioButton = document.getElementById('replay-contextual-audio-button');
+
+    const homeButton = document.getElementById('home-button');
+
     const recordAnswerButton = document.getElementById('record-answer-button');
     const recordFollowUpButton = document.getElementById('record-follow-up-button');
+
+    const infoPopupOverlay = document.getElementById('info-popup-overlay');
+    const infoPopupModal = document.getElementById('info-popup-modal');
+    const infoPopupCloseButton = document.getElementById('info-popup-close-button');
 
     let currentProblem = null;
     let selectedCategories = [];
@@ -23,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let audioChunks = [];
     let currentTargetInputId = null;
     let maxRecordTimer = null;
-    const MAX_RECORD_TIME_MS = 8000;
+    const MAX_RECORD_TIME_MS = 4000;
     let recordStartTime = 0;
     let animationFrameId = null;
 
@@ -48,6 +57,9 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('[Record] Already recording. Ignoring mouse down.');
             return;
         }
+
+        replayQuestionAudioButton.disabled = true;
+        replayContextualAudioButton.disabled = true;
 
         const stream = await requestMicrophoneAccess();
         if (!stream) {
@@ -75,6 +87,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 maxRecordTimer = null;
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
+
+                // Re-enable appropriate replay button
+                if (problemArea.style.display === 'block') {
+                    replayQuestionAudioButton.disabled = false;
+                } else if (feedbackArea.style.display === 'block') {
+                    replayContextualAudioButton.disabled = false;
+                }
 
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                 console.log('[MediaRecorder] onstop: Audio blob created. Size:', audioBlob.size, 'Chunks used:', audioChunks.length);
@@ -121,6 +140,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 maxRecordTimer = null;
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
+
+                // Re-enable appropriate replay button
+                if (problemArea.style.display === 'block') {
+                    replayQuestionAudioButton.disabled = false;
+                } else if (feedbackArea.style.display === 'block') {
+                    replayContextualAudioButton.disabled = false;
+                }
 
                 const recordBtn = (currentTargetInputId === 'user-answer-text') ? recordAnswerButton : recordFollowUpButton;
                 if (recordBtn) {
@@ -217,6 +243,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function stopRecording(targetConceptId, autoStopped = false) {
         console.log('[StopRecord] Mouse up or auto-stop. Attempting to stop for target:', targetConceptId, 'Auto-stopped:', autoStopped, 'MediaRecorder state:', mediaRecorder ? mediaRecorder.state : 'null');
         
+        // Note: onstop will handle re-enabling replay buttons, as that's when recording *actually* finishes processing.
+        // Disabling here might be too early if onstop takes a moment.
+
         if (maxRecordTimer) {
             clearTimeout(maxRecordTimer);
             maxRecordTimer = null;
@@ -475,11 +504,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function startNewProblem() {
         console.log('[UI] startNewProblem called');
         startButton.disabled = true;
+        startButton.style.display = 'none';
+        homeButton.style.display = 'block'; // Show home button when problem starts
         problemArea.style.display = 'none';
         feedbackArea.style.display = 'none';
         nextQuestionButton.style.display = 'none';
         followUpButton.style.display = 'none';
         followUpInputArea.style.display = 'none';
+        replayQuestionAudioButton.style.display = 'none';
+        replayContextualAudioButton.style.display = 'none';
         if (recordAnswerButton) recordAnswerButton.disabled = true;
 
         fetch('/api/start_problem', {
@@ -502,24 +535,35 @@ document.addEventListener('DOMContentLoaded', function() {
             questionAudioElem.src = data.audio_path;
             
             problemArea.style.display = 'block';
-            questionAudioElem.style.display = 'block'; 
+            replayQuestionAudioButton.style.display = 'inline-block';
+            replayQuestionAudioButton.disabled = true; // Disabled until it can play
+            replayContextualAudioButton.style.display = 'none';
             
             questionAudioElem.oncanplaythrough = () => {
                 console.log('[UI] Question audio can play through.');
                 questionAudioElem.play();
             };
+            questionAudioElem.onplay = () => {
+                console.log('[UI] Question audio playing.');
+                replayQuestionAudioButton.disabled = true;
+                replayContextualAudioButton.disabled = true; // General safety
+                recordAnswerButton.disabled = true;
+            };
             questionAudioElem.onended = () => {
-                console.log('[UI] Question audio ended. Enabling answer input.');
+                console.log('[UI] Question audio ended. Enabling answer input and replay.');
                 if(recordAnswerButton) recordAnswerButton.disabled = false;
+                replayQuestionAudioButton.disabled = false;
             };
             questionAudioElem.onerror = () => {
                 console.error('[UI] Error playing question audio.');
                 alert('Error playing question audio. You can still read the question.');
                 if(recordAnswerButton) recordAnswerButton.disabled = false;
+                replayQuestionAudioButton.disabled = false; // Allow retry if source is valid
             };
 
             document.getElementById('category-selection').style.display = 'none';
             startButton.textContent = 'Processing...';
+            startButton.style.display = 'none';
             recordAnswerButton.disabled = true;
 
         })
@@ -527,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('[UI] Error starting problem:', error);
             alert(`Error starting problem: ${error.message}`);
             startButton.disabled = false;
-            startButton.textContent = 'Start Study Session';
+            startButton.style.display = 'inline-block';
             document.getElementById('category-selection').style.display = 'block';
             if (recordAnswerButton) recordAnswerButton.disabled = false; 
         });
@@ -582,6 +626,8 @@ document.addEventListener('DOMContentLoaded', function() {
             problemArea.style.display = 'none'; 
             feedbackArea.style.display = 'block';
             
+            replayQuestionAudioButton.style.display = 'none'; // Hide question replay
+
             if (feedback.is_correct) {
                 feedbackTextElem.textContent = '✓ Correct!';
                 feedbackTextElem.style.color = 'green';
@@ -590,6 +636,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 followUpButton.style.display = 'none';
                 if(recordFollowUpButton) recordFollowUpButton.disabled = true;
                 nextQuestionButton.style.display = 'inline-block'; 
+                replayContextualAudioButton.style.display = 'none'; // No audio for correct answer explanation yet
             } else {
                 feedbackTextElem.textContent = '✗ Incorrect!';
                 feedbackTextElem.style.color = 'red';
@@ -598,19 +645,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 followUpButton.style.display = 'inline-block'; 
                 if(recordFollowUpButton) recordFollowUpButton.disabled = false;
                 nextQuestionButton.style.display = 'inline-block'; 
+                replayContextualAudioButton.style.display = 'none'; // Default to none, show if audio exists
 
                 if (feedback.explanation_audio_path) {
                     questionAudioElem.src = feedback.explanation_audio_path;
-                    questionAudioElem.style.display = 'block'; 
+                    replayContextualAudioButton.style.display = 'inline-block';
+                    replayContextualAudioButton.textContent = "Replay Explanation";
+                    replayContextualAudioButton.disabled = true; // Disabled until it can play
+
                     questionAudioElem.oncanplaythrough = () => {
                         console.log('[UI] Explanation audio can play through.');
                         questionAudioElem.play();
+                    };
+                    // onplay, onended, onerror for questionAudioElem will be rebound here
+                    questionAudioElem.onplay = () => {
+                        console.log('[UI] Explanation audio playing.');
+                        replayContextualAudioButton.disabled = true;
+                        nextQuestionButton.disabled = true;
+                        followUpButton.disabled = true;
+                        if(recordFollowUpButton) recordFollowUpButton.disabled = true;
                     };
                     questionAudioElem.onended = () => {
                         console.log('[UI] Explanation audio ended.');
                         nextQuestionButton.disabled = false;
                         followUpButton.disabled = false;
                         if(recordFollowUpButton) recordFollowUpButton.disabled = false;
+                        replayContextualAudioButton.disabled = false;
                     };
                     questionAudioElem.onerror = () => {
                         console.error('[UI] Error playing explanation audio.');
@@ -618,11 +678,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         nextQuestionButton.disabled = false;
                         followUpButton.disabled = false;
                         if(recordFollowUpButton) recordFollowUpButton.disabled = false;
+                        replayContextualAudioButton.disabled = false;
                     };
                 } else {
                     nextQuestionButton.disabled = false;
                     followUpButton.disabled = false;
                     if(recordFollowUpButton) recordFollowUpButton.disabled = false;
+                    replayContextualAudioButton.style.display = 'none';
                 }
             }
             if (recordAnswerButton) {
@@ -658,6 +720,8 @@ document.addEventListener('DOMContentLoaded', function() {
         followUpInputArea.style.display = 'none';
         nextQuestionButton.style.display = 'none';
         followUpButton.style.display = 'none';
+        replayQuestionAudioButton.style.display = 'none';
+        replayContextualAudioButton.style.display = 'none';
         if(recordFollowUpButton) recordFollowUpButton.disabled = true;
         
         if (selectedCategories.length > 0) {
@@ -666,6 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert("No categories selected. Please refresh and select categories.");
             document.getElementById('category-selection').style.display = 'block';
             startButton.textContent = 'Start Study Session';
+            startButton.style.display = 'inline-block';
             startButton.disabled = false;
         }
     });
@@ -721,17 +786,27 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('[UI] Follow-up response received:', data);
             explanationTextElem.innerHTML = `<strong>Follow-up Response:</strong><br>${data.follow_up_response}`;
             questionAudioElem.src = data.audio_path; 
-            questionAudioElem.style.display = 'block';
+            replayQuestionAudioButton.style.display = 'none';
+            replayContextualAudioButton.style.display = 'inline-block';
+            replayContextualAudioButton.textContent = "Replay Response";
+            replayContextualAudioButton.disabled = true;
             
             questionAudioElem.oncanplaythrough = () => {
                 console.log('[UI] Follow-up audio can play through.');
                 questionAudioElem.play();
+            };
+            // onplay, onended, onerror for questionAudioElem will be rebound here
+            questionAudioElem.onplay = () => {
+                console.log('[UI] Follow-up audio playing.');
+                replayContextualAudioButton.disabled = true;
+                nextQuestionButton.disabled = true;
             };
             questionAudioElem.onended = () => {
                 console.log('[UI] Follow-up audio ended.');
                 nextQuestionButton.disabled = false;
                 nextQuestionButton.focus();
                 followUpInputArea.style.display = 'none'; 
+                replayContextualAudioButton.disabled = false;
             };
             questionAudioElem.onerror = () => {
                 console.error('[UI] Error playing follow-up audio.');
@@ -739,6 +814,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 nextQuestionButton.disabled = false;
                 nextQuestionButton.focus();
                 followUpInputArea.style.display = 'none';
+                replayContextualAudioButton.disabled = false;
             };
         })
         .catch(error => {
@@ -749,4 +825,107 @@ document.addEventListener('DOMContentLoaded', function() {
             if(recordFollowUpButton) recordFollowUpButton.disabled = false;
         });
     });
+
+    replayQuestionAudioButton.addEventListener('click', () => {
+        if (questionAudioElem.src && problemArea.style.display === 'block') {
+            questionAudioElem.play();
+        }
+    });
+
+    replayContextualAudioButton.addEventListener('click', () => {
+        if (questionAudioElem.src && feedbackArea.style.display === 'block') {
+            questionAudioElem.play();
+        }
+    });
+
+    homeButton.addEventListener('click', function() {
+        console.log('[UI] Home button clicked.');
+
+        // Stop any active media recording
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            const activeRecordButtonText = recordAnswerButton.querySelector('.button-text').textContent;
+            const activeFollowUpButtonText = recordFollowUpButton.querySelector('.button-text').textContent;
+
+            if (activeRecordButtonText.includes("Recording") || activeRecordButtonText.includes("Transcribing") || activeRecordButtonText.includes("Evaluating")) {
+                stopRecording('user-answer-text');
+            } else if (activeFollowUpButtonText.includes("Recording")) {
+                stopRecording(followUpQuestionTextElem.id);
+            }
+        }
+
+        // Stop any playing audio
+        if (!questionAudioElem.paused) {
+            questionAudioElem.pause();
+            questionAudioElem.currentTime = 0;
+        }
+
+        // Hide problem/feedback areas
+        problemArea.style.display = 'none';
+        feedbackArea.style.display = 'none';
+        followUpInputArea.style.display = 'none';
+        nextQuestionButton.style.display = 'none';
+        replayQuestionAudioButton.style.display = 'none';
+        replayContextualAudioButton.style.display = 'none';
+
+        // Show category selection
+        document.getElementById('category-selection').style.display = 'block';
+        
+        // Reset and show start button
+        startButton.textContent = 'Start Study Session';
+        startButton.disabled = false;
+        startButton.style.display = 'inline-block';
+
+        // Hide home button itself
+        homeButton.style.display = 'none';
+
+        // Reset record button states
+        const answerButtonText = recordAnswerButton.querySelector('.button-text');
+        if (answerButtonText) answerButtonText.textContent = "Hold to Record Answer";
+        recordAnswerButton.disabled = true; // Should be disabled until question audio ends
+        recordAnswerButton.classList.remove('bg-red-600', 'p-4', 'text-lg');
+        recordAnswerButton.classList.add('bg-green-500', 'hover:bg-green-600', 'py-2', 'px-4');
+        const answerSlider = recordAnswerButton.querySelector('.record-progress-slider');
+        if (answerSlider) answerSlider.style.width = '0%';
+
+        const followUpRecButtonText = recordFollowUpButton.querySelector('.button-text');
+        if (followUpRecButtonText) followUpRecButtonText.textContent = "Hold to Record Follow-up";
+        recordFollowUpButton.disabled = true;
+        recordFollowUpButton.classList.remove('bg-red-600', 'p-4', 'text-lg');
+        recordFollowUpButton.classList.add('bg-green-500', 'hover:bg-green-600', 'py-2', 'px-4');
+        const followUpSlider = recordFollowUpButton.querySelector('.record-progress-slider');
+        if (followUpSlider) followUpSlider.style.width = '0%';
+        
+        followUpQuestionTextElem.value = '';
+        submitFollowUpButton.disabled = false;
+
+        currentProblem = null; 
+        // selectedCategories = []; // Let user keep their selections or deselect manually
+        console.log('[UI] Returned to category selection.');
+    });
+
+    // Info Popup Logic
+    if (!sessionStorage.getItem('infoPopupShown')) {
+        if (infoPopupOverlay) {
+            infoPopupOverlay.style.display = 'flex'; // Use flex to center the modal
+        }
+    }
+
+    if (infoPopupCloseButton) {
+        infoPopupCloseButton.addEventListener('click', () => {
+            if (infoPopupOverlay) {
+                infoPopupOverlay.style.display = 'none';
+            }
+            sessionStorage.setItem('infoPopupShown', 'true');
+        });
+    }
+
+    // Optional: Close modal if overlay is clicked (but not the modal content itself)
+    if (infoPopupOverlay) {
+        infoPopupOverlay.addEventListener('click', function(event) {
+            if (event.target === infoPopupOverlay) { // Only if overlay itself is clicked
+                infoPopupOverlay.style.display = 'none';
+                sessionStorage.setItem('infoPopupShown', 'true');
+            }
+        });
+    }
 }); 
